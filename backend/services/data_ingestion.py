@@ -58,6 +58,7 @@ class DataIngestionService:
                     stats[key] += event_stats.get(key, 0)
             except Exception as e:
                 print(f"Error ingesting event {event_row['EventName']}: {e}")
+                self.db.rollback()
                 continue
         
         self.db.commit()
@@ -112,6 +113,7 @@ class DataIngestionService:
                         stats[key] += session_stats.get(key, 0)
             except Exception as e:
                 print(f"Error ingesting session {session_type}: {e}")
+                self.db.rollback()
                 continue
         
         return stats
@@ -162,6 +164,7 @@ class DataIngestionService:
                 stats['pit_stops'] += driver_stats['pit_stops']
             except Exception as e:
                 print(f"      Error ingesting driver {driver_abbr}: {e}")
+                self.db.rollback()
                 continue
         
         # Ingest weather

@@ -59,11 +59,15 @@ def _run_ingest_once_sync(season: int) -> Dict[str, int]:
         }
     except Exception as exc:
         db.rollback()
-        log.status = "failed"
-        log.completed_at = datetime.utcnow()
-        log.duration_seconds = (log.completed_at - log.started_at).total_seconds()
-        log.error_message = str(exc)
-        db.commit()
+        try:
+            log.status = "failed"
+            log.completed_at = datetime.utcnow()
+            log.duration_seconds = (log.completed_at - log.started_at).total_seconds()
+            log.error_message = str(exc)[:500]
+            db.merge(log)
+            db.commit()
+        except Exception:
+            db.rollback()
         raise
     finally:
         db.close()
