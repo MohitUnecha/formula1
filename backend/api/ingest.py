@@ -27,6 +27,18 @@ _live_state: Dict[str, Any] = {
     "runs": 0,
 }
 
+# One-off ingestion task state
+_ingest_task: Optional[asyncio.Task] = None
+_ingest_state: Dict[str, Any] = {
+    "running": False,
+    "season": None,
+    "started_at": None,
+    "completed_at": None,
+    "status": "idle",
+    "stats": None,
+    "error": None,
+}
+
 
 def _run_ingest_once_sync(season: int) -> Dict[str, int]:
     """Run one blocking ingest pass in a worker thread."""
@@ -170,19 +182,53 @@ async def live_ingest_status(db: Session = Depends(get_db)):
 
 @router.post("/run/season/{season}")
 async def run_single_ingest(season: int):
-    """Run one immediate ingest pass for a season."""
+    """Kick off a background ingest pass for a season. Returns immediately."""
+    global _ingest_task
+
     if season < 1950 or season > 2100:
         raise HTTPException(status_code=400, detail="Invalid season")
 
-    try:
-        stats = await asyncio.to_thread(_run_ingest_once_sync, season)
+    if _ingest_task and not _ingest_task.done():
         return {
-            "status": "completed",
-            "season": season,
-            "stats": stats,
+            "status": "already_running",
+            "message": f"Ingestion already in progress for season {_ingest_state['season']}",
+            "ingest": _ingest_state,
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(exc)}")
+
+    async def _bg_ingest():
+        _ingest_state["running"] = True
+        _ingest_state["season"] = season
+        _ingest_state["started_at"] = datetime.utcnow().isoformat()
+        _ingest_state["completed_at"] = None
+        _ingest_state["status"] = "running"
+        _ingest_state["stats"] = None
+        _ingest_state["error"] = None
+        try:
+            stats = await asyncio.to_thread(_run_ingest_once_sync, season)
+            _ingest_state["status"] = "completed"
+            _ingest_state["stats"] = stats
+        except Exception as exc:
+            logger.error("Background ingestion failed: %s", exc)
+            _ingest_state["status"] = "failed"
+            _ingest_state["error"] = str(exc)[:500]
+        finally:
+            _ingest_state["running"] = False
+            _ingest_state["completed_at"] = datetime.utcnow().isoformat()
+
+    _ingest_task = asyncio.create_task(_bg_ingest())
+    return {
+        "status": "started",
+        "message": f"Ingestion started in background for season {season}. Poll /api/ingest/run/status for progress.",
+        "season": season,
+    }
+
+
+@router.get("/run/status")
+async def ingest_run_status():
+    """Check the status of the latest one-off ingestion run."""
+    is_running = bool(_ingest_task and not _ingest_task.done())
+    _ingest_state["running"] = is_running
+    return {"ingest": _ingest_state}
 
 @router.get("/logs", response_model=List[dict])
 async def get_ingest_logs(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
