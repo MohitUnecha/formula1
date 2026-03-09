@@ -56,12 +56,12 @@ class DataIngestionService:
                 event_stats = self.ingest_event(season, event_row)
                 for key in stats:
                     stats[key] += event_stats.get(key, 0)
+                self.db.commit()  # Commit after each event so progress survives restarts
             except Exception as e:
                 print(f"Error ingesting event {event_row['EventName']}: {e}")
                 self.db.rollback()
                 continue
         
-        self.db.commit()
         print(f"Season {season} ingestion complete: {stats}")
         return stats
     
