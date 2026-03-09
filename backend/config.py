@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str = "sqlite:///./f1.db"
-    database_pool_size: int = 20
+    database_pool_size: int = 3
     database_max_overflow: int = 0
     
     # Redis
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    api_workers: int = 4
+    api_workers: int = 1
     api_reload: bool = False
     
     # CORS

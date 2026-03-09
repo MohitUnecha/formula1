@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Security
+from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 from datetime import datetime
 import asyncio
 import logging
+import os
 import traceback
 from database import get_db
 from database import SessionLocal
@@ -12,6 +14,15 @@ from typing import List, Dict, Any, Optional
 
 router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 logger = logging.getLogger(__name__)
+
+# API key auth for dangerous endpoints
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def verify_admin_key(api_key: str = Security(_api_key_header)):
+    expected = os.getenv("ADMIN_API_KEY")
+    if not expected or api_key != expected:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+    return api_key
 
 
 # Live ingestion state (in-memory process state)
@@ -114,6 +125,7 @@ async def _live_ingest_loop(season: int, interval_seconds: int):
 async def start_live_ingest(
     season: int = Query(..., ge=1950, le=2100),
     interval_seconds: int = Query(default=300, ge=30, le=86400),
+    _key: str = Depends(verify_admin_key),
 ):
     """Start continuous ingestion loop for a season."""
     global _live_task
@@ -140,7 +152,7 @@ async def start_live_ingest(
 
 
 @router.post("/live/stop")
-async def stop_live_ingest():
+async def stop_live_ingest(_key: str = Depends(verify_admin_key)):
     """Stop continuous ingestion loop."""
     global _live_task
 
@@ -181,7 +193,7 @@ async def live_ingest_status(db: Session = Depends(get_db)):
 
 
 @router.post("/run/season/{season}")
-async def run_single_ingest(season: int):
+async def run_single_ingest(season: int, _key: str = Depends(verify_admin_key)):
     """Kick off a background ingest pass for a season. Returns immediately."""
     global _ingest_task
 

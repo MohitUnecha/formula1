@@ -65,8 +65,18 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on shutdown"""
+    """Cleanup on shutdown - cancel background tasks"""
     print("Shutting down F1 Analytics API...")
+    from api.ingest import _live_task, _ingest_task, _live_state, _ingest_state
+    for task in [_live_task, _ingest_task]:
+        if task and not task.done():
+            task.cancel()
+            try:
+                await asyncio.wait_for(task, timeout=5.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
+    _live_state["running"] = False
+    _ingest_state["running"] = False
 
 
 @app.get("/")
@@ -109,12 +119,12 @@ async def health_check(db: Session = Depends(get_db)):
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler"""
+    import logging
+    logging.getLogger(__name__).error(f"Unhandled exception on {request.url}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={
-            "error": "Internal server error",
-            "message": str(exc),
-            "path": str(request.url)
+            "error": "Internal server error"
         }
     )
 
