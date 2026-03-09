@@ -1,0 +1,69 @@
+{
+  "version": "20260216_033002",
+  "trained_at": "2026-02-16T03:30:02.104470",
+  "feature_columns": [
+    "grid",
+    "avg_position_last5",
+    "avg_grid_last5",
+    "is_win_rate_last10",
+    "is_podium_rate_last10",
+    "is_dnf_rate_last10",
+    "positions_gained_avg",
+    "team_avg_finish_last5",
+    "avg_points_last5",
+    "season",
+    "round_num"
+  ],
+  "metrics": {
+    "position_mae": 3.49,
+    "win_accuracy": 0.952,
+    "podium_accuracy": 0.905,
+    "dnf_accuracy": 0.666,
+    "feature_importance": [
+      {
+        "feature": "grid",
+        "importance": 0.4605
+      },
+      {
+        "feature": "avg_grid_last5",
+        "importance": 0.1213
+      },
+      {
+        "feature": "team_avg_finish_last5",
+        "importance": 0.0921
+      },
+      {
+        "feature": "avg_position_last5",
+        "importance": 0.0655
+      },
+      {
+        "feature": "avg_points_last5",
+        "importance": 0.0642
+      },
+      {
+        "feature": "positions_gained_avg",
+        "importance": 0.0487
+      },
+      {
+        "feature": "round_num",
+        "importance": 0.0376
+      },
+      {
+        "feature": "season",
+        "importance": 0.037
+      },
+      {
+        "feature": "is_podium_rate_last10",
+        "importance": 0.0338
+      },
+      {
+        "feature": "is_dnf_rate_last10",
+        "importance": 0.023
+      },
+      {
+        "feature": "is_win_rate_last10",
+        "importance": 0.0165
+      }
+    ]
+  }
+}

@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Data
+data/
+*.parquet
+*.csv
+*.pkl
+*.joblib
+
+# Models
+models/
+*.h5
+*.model
+mlruns/
+
+# FastF1 cache
+fastf1_cache/
+
+# Database
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.nyc_output/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
